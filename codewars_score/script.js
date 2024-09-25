@@ -16,7 +16,6 @@ async function fetchUser(){
                     <p>Becsület: ${user.honor}</p>
                     <p>Klán: ${user.clan}</p>
                     <p>Globális helyezés: ${user.leaderboardPosition}</p>
-                    <p>Képességek: ${user.skills}</p>
                 `;
                 document.getElementById("lekertAdatok").innerHTML = felhasznaloAdat;
                 }
