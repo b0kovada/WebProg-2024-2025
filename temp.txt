@@ -1,0 +1,183 @@
+import java.io.*;
+import java.util.*;
+
+public class CegesAuto {
+    
+    static class AutokData {
+        String rendszam;
+        int dolgozoId;
+        int kmStart;
+        int kmEnd;
+        int nap;
+        String idopont;
+        boolean isBeHajt;
+        
+        public AutokData(String rendszam, int dolgozoId, int kmStart, int kmEnd, int nap, String idopont, boolean isBeHajt) {
+            this.rendszam = rendszam;
+            this.dolgozoId = dolgozoId;
+            this.kmStart = kmStart;
+            this.kmEnd = kmEnd;
+            this.nap = nap;
+            this.idopont = idopont;
+            this.isBeHajt = isBeHajt;
+        }
+    }
+    
+    public static void main(String[] args) {
+        List<AutokData> adatLista = new ArrayList<>();
+        
+        // 1. feladat: Autok.txt beolvasása
+        beolvasFajl(adatLista);
+        
+        // 2. feladat: Legutóbb elvitt autó
+        legutobbiKihajtas(adatLista);
+        
+        // 3. feladat: Kérjük be a napot, és írjuk ki a kivitt és visszahozott autókat
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Adjon meg egy napot (1-30):");
+        int nap = scanner.nextInt();
+        kivittEsVisszahozott(nap, adatLista);
+        
+        // 4. feladat: Hány autó nem volt bent a hónap végén
+        autokNemBenne(adatLista);
+        
+        // 5. feladat: Kilométer statisztika
+        kilometerStat(adatLista);
+        
+        // 6. feladat: Legnagyobb távolságot megtett személy
+        legnagyobbUt(adatLista);
+        
+        // 7. feladat: Menetlevél készítése
+        System.out.println("Adja meg a rendszámot a menetlevélhez:");
+        String rendszam = scanner.next();
+        menetlevelKeszites(rendszam, adatLista);
+    }
+    
+    // 1. Beolvasás fájlból Scanner-rel
+    public static void beolvasFajl(List<AutokData> adatLista) {
+        try (Scanner scanner = new Scanner(new File("autok.txt"))) {
+            while (scanner.hasNextLine()) {
+                String sor = scanner.nextLine();
+                String[] reszek = sor.split(" ");
+                int nap = Integer.parseInt(reszek[0]);
+                String idopont = reszek[1];
+                String rendszam = reszek[2];
+                int dolgozoId = Integer.parseInt(reszek[3]);
+                int kmStart = Integer.parseInt(reszek[4]);
+                int kmEnd = Integer.parseInt(reszek[5]);
+                boolean isBeHajt = reszek[5].equals("1");
+                adatLista.add(new AutokData(rendszam, dolgozoId, kmStart, kmEnd, nap, idopont, isBeHajt));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    // 2. Legutóbb elvitt autó
+    public static void legutobbiKihajtas(List<AutokData> adatLista) {
+        AutokData utolsoKihajtas = null;
+        
+        for (AutokData adat : adatLista) {
+            if (!adat.isBeHajt) {
+                utolsoKihajtas = adat;
+            }
+        }
+        
+        if (utolsoKihajtas != null) {
+            System.out.println("2. feladat");
+            System.out.println("30. nap rendszám: " + utolsoKihajtas.rendszam);
+        }
+    }
+    
+    // 3. Kivitt és visszahozott autók
+    public static void kivittEsVisszahozott(int nap, List<AutokData> adatLista) {
+        System.out.println("3. feladat");
+        System.out.println("Nap: " + nap);
+        System.out.println("Forgalom a(z) " + nap + ". napon:");
+        
+        for (AutokData adat : adatLista) {
+            if (adat.nap == nap) {
+                String irany = adat.isBeHajt ? "be" : "ki";
+                System.out.println(adat.idopont + " " + adat.rendszam + " " + adat.dolgozoId + " " + irany);
+            }
+        }
+    }
+    
+    // 4. Hány autó nem volt bent a hónap végén
+    public static void autokNemBenne(List<AutokData> adatLista) {
+        Set<String> autokBenne = new HashSet<>();
+        
+        for (AutokData adat : adatLista) {
+            if (adat.isBeHajt) {
+                autokBenne.add(adat.rendszam);
+            }
+        }
+        
+        System.out.println("4. feladat");
+        int nemBenne = 0;
+        
+        for (int i = 300; i <= 309; i++) {
+            String rendszam = "CEG" + i;
+            if (!autokBenne.contains(rendszam)) {
+                nemBenne++;
+            }
+        }
+        
+        System.out.println("A hónap végén " + nemBenne + " autó nem volt bent a parkolóban.");
+    }
+    
+    // 5. Kilométer statisztika
+    public static void kilometerStat(List<AutokData> adatLista) {
+        System.out.println("5. feladat");
+        
+        Map<String, Integer> kmMap = new HashMap<>();
+        
+        for (AutokData adat : adatLista) {
+            if (!kmMap.containsKey(adat.rendszam)) {
+                kmMap.put(adat.rendszam, 0);
+            }
+            kmMap.put(adat.rendszam, kmMap.get(adat.rendszam) + (adat.kmEnd - adat.kmStart));
+        }
+        
+        for (String rendszam : kmMap.keySet()) {
+            System.out.println(rendszam + " " + kmMap.get(rendszam) + " km");
+        }
+    }
+    
+    // 6. Legnagyobb távolságot megtett személy
+    public static void legnagyobbUt(List<AutokData> adatLista) {
+        System.out.println("6. feladat");
+        
+        int maxKm = 0;
+        int dolgozoId = -1;
+        
+        for (AutokData adat : adatLista) {
+            int ut = adat.kmEnd - adat.kmStart;
+            if (ut > maxKm) {
+                maxKm = ut;
+                dolgozoId = adat.dolgozoId;
+            }
+        }
+        
+        System.out.println("Leghosszabb út: " + maxKm + " km, személy: " + dolgozoId);
+    }
+    
+    // 7. Menetlevél készítése
+    public static void menetlevelKeszites(String rendszam, List<AutokData> adatLista) {
+        System.out.println("7. feladat");
+        System.out.println("Rendszám: " + rendszam);
+        
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(rendszam + "_menetlevel.txt"))) {
+            for (AutokData adat : adatLista) {
+                if (adat.rendszam.equals(rendszam)) {
+                    String kiir = adat.dolgozoId + "\t" + adat.nap + ". " + adat.idopont + "\t" + adat.kmStart + " km" + 
+                            (adat.isBeHajt ? "\t" + adat.nap + ". " + adat.idopont + "\t" + adat.kmEnd + " km" : "");
+                    writer.write(kiir);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
