@@ -1,8 +1,6 @@
-// models/student.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize'); // importáljuk a sequelize kapcsolatot
+const sequelize = require('../sequelize');
 
-// Modell definiálása
 const Student = sequelize.define('Student', {
   student_id: {
     type: DataTypes.INTEGER,
@@ -13,7 +11,6 @@ const Student = sequelize.define('Student', {
     type: DataTypes.STRING(255),
     allowNull: false,
     validate: {
-      len: [4, 20] // Minimum 4, maximum 20 karakter
     }
   },
   favorite_class: {
@@ -29,8 +26,8 @@ const Student = sequelize.define('Student', {
     defaultValue: true
   }
 }, {
-  tableName: 'students', // explicit táblanév
-  timestamps: false // Ha nincs createdAt és updatedAt oszlop
+  tableName: 'students', 
+  timestamps: false
 });
 
 module.exports = Student;

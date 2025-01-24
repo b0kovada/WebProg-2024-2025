@@ -1,14 +1,11 @@
-// index.js
-const sequelize = require('./sequelize');  // Importáljuk az adatbázis kapcsolatot
-const Student = require('./models/student');  // Importáljuk a modell
+const sequelize = require('./sequelize');ot
+const Student = require('./models/student');
 
-// 1. Táblázat létrehozása
 (async () => {
   try {
-    await sequelize.sync({ force: true }); // A tábla létrehozása (force: true felülírja)
+    await sequelize.sync({ force: true });
     console.log('Students tábla sikeresen létrehozva.');
     
-    // 2. Adatok beszúrása (bulkCreate)
     const students = await Student.bulkCreate([
       { name: 'Alice', favorite_class: 'Math', school_year: 1 },
       { name: 'Bob', favorite_class: 'Computer Science', school_year: 2, has_language_examination: false },
@@ -18,7 +15,6 @@ const Student = require('./models/student');  // Importáljuk a modell
     ]);
     console.log('Adatok sikeresen hozzáadva:', students);
 
-    // 3. a) Diákok nevei, akiknek kedvenc tantárgya a Computer Science vagy van nyelvvizsgájuk
     const studentsQuery = await Student.findAll({
       attributes: ['name'],
       where: {
@@ -30,7 +26,6 @@ const Student = require('./models/student');  // Importáljuk a modell
     });
     console.log('Diákok nevei:', studentsQuery.map(student => student.name));
 
-    // 3. b) Évfolyamonkénti tanulószám
     const studentCounts = await Student.findAll({
       attributes: [
         'school_year',
