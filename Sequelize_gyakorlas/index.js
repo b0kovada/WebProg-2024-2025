@@ -1,4 +1,4 @@
-const sequelize = require('./sequelize');ot
+const sequelize = require('./sequelize');
 const Student = require('./models/student');
 
 (async () => {
@@ -18,7 +18,7 @@ const Student = require('./models/student');
     const studentsQuery = await Student.findAll({
       attributes: ['name'],
       where: {
-        [Sequelize.Op.or]: [
+        [sequelize.Op.or]: [
           { favorite_class: 'Computer Science' },
           { has_language_examination: true }
         ]
