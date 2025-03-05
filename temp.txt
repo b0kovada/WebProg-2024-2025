@@ -1,1 +1,153 @@
 
+// Fő komponens (App.vue)
+<template>
+  <div class="container mt-4">
+    <h1>Időpontfoglaló</h1>
+    <router-view></router-view>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'App'
+}
+</script>
+
+<style>
+@import 'bootstrap/dist/css/bootstrap.min.css';
+</style>
+
+// Router beállítás (router.js)
+import { createRouter, createWebHistory } from 'vue-router';
+import BookingList from './components/BookingList.vue';
+import BookingForm from './components/BookingForm.vue';
+
+const routes = [
+  { path: '/', component: BookingList },
+  { path: '/foglalas/:time', component: BookingForm }
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+});
+
+export default router;
+
+// Időpont lista (BookingList.vue)
+<template>
+  <div>
+    <h2>Elérhető időpontok</h2>
+    <ul class="list-group">
+      <li v-for="slot in availableSlots" :key="slot" class="list-group-item">
+        <router-link :to="`/foglalas/${slot}`" class="btn btn-primary">{{ slot }}</router-link>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+import { useBookingStore } from '@/stores/bookingStore';
+
+export default {
+  data() {
+    return {
+      availableSlots: []
+    };
+  },
+  async created() {
+    const store = useBookingStore();
+    this.availableSlots = await store.getAvailableSlots();
+  }
+};
+</script>
+
+// Foglalási űrlap (BookingForm.vue)
+<template>
+  <div>
+    <h2>Foglalás: {{ $route.params.time }}</h2>
+    <form @submit.prevent="submitBooking">
+      <div class="mb-3">
+        <label>Név:</label>
+        <input v-model="name" class="form-control" required />
+      </div>
+      <div class="mb-3">
+        <label>Telefonszám:</label>
+        <input v-model="phone" class="form-control" required />
+      </div>
+      <button type="submit" class="btn btn-success">Foglalás</button>
+    </form>
+  </div>
+</template>
+
+<script>
+import { useBookingStore } from '@/stores/bookingStore';
+import { useToast } from 'vue-toastification';
+
+export default {
+  data() {
+    return {
+      name: '',
+      phone: ''
+    };
+  },
+  methods: {
+    async submitBooking() {
+      const store = useBookingStore();
+      const toast = useToast();
+      
+      await store.bookSlot(this.$route.params.time, this.name, this.phone);
+      toast.success('Foglalás sikeres!');
+      this.$router.push('/');
+    }
+  }
+};
+</script>
+
+// Pinia store (bookingStore.js)
+import { defineStore } from 'pinia';
+import axios from 'axios';
+
+export const useBookingStore = defineStore('booking', {
+  state: () => ({
+    bookings: []
+  }),
+  actions: {
+    async getAvailableSlots() {
+      const { data: booked } = await axios.get('http://localhost:3000/bookings');
+      const allSlots = Array.from({ length: 8 }, (_, i) => `${8 + i}:00`);
+      return allSlots.filter(slot => !booked.some(b => b.time === slot));
+    },
+    async bookSlot(time, name, phone) {
+      await axios.post('http://localhost:3000/bookings', { time, name, phone });
+    }
+  }
+});
+
+// Tesztek (bookingStore.test.js)
+import { describe, it, expect } from 'vitest';
+import { useBookingStore } from '@/stores/bookingStore';
+import axios from 'axios';
+import { setActivePinia, createPinia } from 'pinia';
+
+vi.mock('axios');
+
+describe('Booking Store', () => {
+  setActivePinia(createPinia());
+  const store = useBookingStore();
+  
+  it('Lekérhető időpontok', async () => {
+    axios.get.mockResolvedValue({ data: [{ time: '9:00' }] });
+    const slots = await store.getAvailableSlots();
+    expect(slots).not.toContain('9:00');
+  });
+
+  it('Foglalás mentése', async () => {
+    axios.post.mockResolvedValue();
+    await store.bookSlot('10:00', 'Teszt Elek', '123456789');
+    expect(axios.post).toHaveBeenCalledWith('http://localhost:3000/bookings', {
+      time: '10:00', name: 'Teszt Elek', phone: '123456789'
+    });
+  });
+});
