@@ -1,4 +1,3 @@
-
 // Fő komponens (App.vue)
 <template>
   <div class="container mt-4">
@@ -7,10 +6,7 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'App'
-}
+<script setup>
 </script>
 
 <style>
@@ -46,27 +42,22 @@ export default router;
   </div>
 </template>
 
-<script>
-import axios from 'axios';
+<script setup>
+import { ref, onMounted } from 'vue';
 import { useBookingStore } from '@/stores/bookingStore';
 
-export default {
-  data() {
-    return {
-      availableSlots: []
-    };
-  },
-  async created() {
-    const store = useBookingStore();
-    this.availableSlots = await store.getAvailableSlots();
-  }
-};
+const store = useBookingStore();
+const availableSlots = ref([]);
+
+onMounted(async () => {
+  availableSlots.value = await store.getAvailableSlots();
+});
 </script>
 
 // Foglalási űrlap (BookingForm.vue)
 <template>
   <div>
-    <h2>Foglalás: {{ $route.params.time }}</h2>
+    <h2>Foglalás: {{ time }}</h2>
     <form @submit.prevent="submitBooking">
       <div class="mb-3">
         <label>Név:</label>
@@ -81,27 +72,25 @@ export default {
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useToast } from 'vue-toastification';
 
-export default {
-  data() {
-    return {
-      name: '',
-      phone: ''
-    };
-  },
-  methods: {
-    async submitBooking() {
-      const store = useBookingStore();
-      const toast = useToast();
-      
-      await store.bookSlot(this.$route.params.time, this.name, this.phone);
-      toast.success('Foglalás sikeres!');
-      this.$router.push('/');
-    }
-  }
+const route = useRoute();
+const router = useRouter();
+const store = useBookingStore();
+const toast = useToast();
+
+const time = route.params.time;
+const name = ref('');
+const phone = ref('');
+
+const submitBooking = async () => {
+  await store.bookSlot(time, name.value, phone.value);
+  toast.success('Foglalás sikeres!');
+  router.push('/');
 };
 </script>
 
@@ -126,7 +115,7 @@ export const useBookingStore = defineStore('booking', {
 });
 
 // Tesztek (bookingStore.test.js)
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { useBookingStore } from '@/stores/bookingStore';
 import axios from 'axios';
 import { setActivePinia, createPinia } from 'pinia';
