@@ -2,13 +2,26 @@
 <template>
   <div>
     <h2>Elérhető időpontok</h2>
-    <ul class="list-group">
-      <li v-for="slot in availableSlots" :key="slot.id" class="list-group-item">
-        <router-link :to="`/foglalas/${slot.id}`" class="btn btn-primary">
-          {{ slot.date }} - {{ slot.time }}
-        </router-link>
-      </li>
-    </ul>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Nap</th>
+          <th>Időpont</th>
+          <th>Foglalás</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="slot in availableSlots" :key="slot.id">
+          <td>{{ slot.date }}</td>
+          <td>{{ slot.time }}</td>
+          <td>
+            <router-link :to="`/foglalas/${slot.id}`" class="btn btn-primary">
+              Foglalás
+            </router-link>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
