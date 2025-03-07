@@ -48,7 +48,7 @@ onMounted(async () => {
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useToast } from 'vue-toastification';
@@ -62,10 +62,13 @@ const slot = ref(null);
 const name = ref('');
 const phone = ref('');
 
-onMounted(async () => {
+const loadSlot = async () => {
   await store.fetchBookings();
-  slot.value = store.bookings.find(b => b.id == route.params.id);
-});
+  slot.value = store.getAvailableSlots().find(b => b.id == route.params.id);
+};
+
+onMounted(loadSlot);
+watch(() => route.params.id, loadSlot);
 
 const submitBooking = async () => {
   if (!slot.value) return;
@@ -88,7 +91,7 @@ export const useBookingStore = defineStore('booking', {
       const { data } = await axios.get('http://localhost:3000/bookings');
       this.bookings = data;
     },
-    async getAvailableSlots() {
+    getAvailableSlots() {
       const allSlots = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, time: `${8 + i}:00` }));
       return allSlots.filter(slot => !this.bookings.some(b => b.time === slot.time));
     },
