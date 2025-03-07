@@ -1,103 +1,22 @@
-// Időpont lista (BookingList.vue)
-<template>
-  <div>
-    <h2>Elérhető időpontok</h2>
-    <ul class="list-group">
-      <li v-for="slot in availableSlots" :key="slot.id" class="list-group-item">
-        <router-link :to="`/foglalas/${slot.id}`" class="btn btn-primary">{{ slot.time }}</router-link>
-      </li>
-    </ul>
-  </div>
-</template>
+import { createRouter, createWebHistory } from 'vue-router';
+import BookingList from '@/components/BookingList.vue';
+import BookingForm from '@/components/BookingForm.vue';
 
-<script setup>
-import { ref, onMounted } from 'vue';
-import { useBookingStore } from '@/stores/bookingStore';
-
-const store = useBookingStore();
-const availableSlots = ref([]);
-
-onMounted(async () => {
-  await store.fetchBookings();
-  availableSlots.value = await store.getAvailableSlots();
-});
-</script>
-
-// Foglalási űrlap (BookingForm.vue)
-<template>
-  <div>
-    <h2>Foglalás</h2>
-    <div v-if="slot">
-      <h3>Időpont: {{ slot.time }}</h3>
-      <form @submit.prevent="submitBooking">
-        <div class="mb-3">
-          <label>Név:</label>
-          <input v-model="name" class="form-control" required />
-        </div>
-        <div class="mb-3">
-          <label>Telefonszám:</label>
-          <input v-model="phone" class="form-control" required />
-        </div>
-        <button type="submit" class="btn btn-success">Foglalás</button>
-      </form>
-    </div>
-    <div v-else>
-      <p>Időpont nem található!</p>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useBookingStore } from '@/stores/bookingStore';
-import { useToast } from 'vue-toastification';
-
-const route = useRoute();
-const router = useRouter();
-const store = useBookingStore();
-const toast = useToast();
-
-const slot = ref(null);
-const name = ref('');
-const phone = ref('');
-
-const loadSlot = async () => {
-  await store.fetchBookings();
-  slot.value = store.getAvailableSlots().find(b => b.id == route.params.id);
-};
-
-onMounted(loadSlot);
-watch(() => route.params.id, loadSlot);
-
-const submitBooking = async () => {
-  if (!slot.value) return;
-  await store.bookSlot(slot.value.time, name.value, phone.value);
-  toast.success('Foglalás sikeres!');
-  router.push('/');
-};
-</script>
-
-// Pinia store (bookingStore.js)
-import { defineStore } from 'pinia';
-import axios from 'axios';
-
-export const useBookingStore = defineStore('booking', {
-  state: () => ({
-    bookings: []
-  }),
-  actions: {
-    async fetchBookings() {
-      const { data } = await axios.get('http://localhost:3000/bookings');
-      this.bookings = data;
-    },
-    getAvailableSlots() {
-      const allSlots = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, time: `${8 + i}:00` }));
-      return allSlots.filter(slot => !this.bookings.some(b => b.time === slot.time));
-    },
-    async bookSlot(time, name, phone) {
-      await axios.post('http://localhost:3000/bookings', { id: Date.now(), time, name, phone });
-      await this.fetchBookings();
-    }
+const routes = [
+  {
+    path: '/',
+    component: BookingList
+  },
+  {
+    path: '/foglalas/:id',
+    component: BookingForm,
+    props: true
   }
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
 });
+
+export default router;
