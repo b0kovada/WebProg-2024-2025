@@ -1,9 +1,45 @@
-TypeError: Cannot read properties of undefined (reading 'params')
- ❯ src/views/BookingFormView.vue:52:49
-     50|     }))
-     51|   );
-     52|   slot.value = allSlots.find(s => s.id == route.params.id && !bookedSlots.includes(`${s.date}-${s.time}`));
-       |                                                 ^
-     53| };
-     54| 
- ❯ fetchSlot src/views/BookingFormView.vue:52:25
+import { describe, it, expect, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
+import BookingList from '../components/BookingList.vue';
+import BookingForm from '../components/BookingForm.vue';
+import axios from 'axios';
+import { createRouter, createWebHistory } from 'vue-router';
+
+vi.mock('axios');
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [{ path: '/foglalas/:id', component: BookingForm }],
+});
+
+describe('BookingList.vue', () => {
+  it('fetches and displays available slots', async () => {
+    axios.get.mockResolvedValue({ data: [{ date: 'Hétfő', time: '10:00' }] });
+    const wrapper = mount(BookingList);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(wrapper.text()).toContain('Hétfő');
+    expect(wrapper.text()).toContain('10:00');
+  });
+});
+
+describe('BookingForm.vue', () => {
+  it('displays error if form is submitted empty', async () => {
+    const wrapper = mount(BookingForm, {
+      global: { plugins: [router] },
+      props: { id: '1' },
+    });
+    await wrapper.find('button').trigger('click');
+    expect(wrapper.text()).toContain('Időpont nem található!');
+  });
+
+  it('submits a booking successfully', async () => {
+    axios.post.mockResolvedValue({});
+    const wrapper = mount(BookingForm, {
+      global: { plugins: [router] },
+      props: { id: '1' },
+    });
+    wrapper.setData({ name: 'Teszt Elek', phone: '123456789', slot: { date: 'Hétfő', time: '10:00' } });
+    await wrapper.find('button').trigger('click');
+    expect(axios.post).toHaveBeenCalled();
+  });
+});
