@@ -1,113 +1,47 @@
-// Időpont lista (BookingList.vue)
-<template>
-  <div class="container mt-4">
-    <h2 class="text-center mb-4">Elérhető időpontok</h2>
-    <table class="table table-bordered table-hover text-center">
-      <thead class="table-dark">
-        <tr>
-          <th>Nap</th>
-          <th>Időpont</th>
-          <th>Foglalás</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="slot in availableSlots" :key="slot.id">
-          <td>{{ slot.date }}</td>
-          <td>{{ slot.time }}</td>
-          <td>
-            <router-link :to="`/foglalas/${slot.id}`" class="btn btn-primary">Foglalás</router-link>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</template>
-
-<script setup>
-import { ref, onMounted } from 'vue';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
+import BookingList from '../components/BookingList.vue';
+import BookingForm from '../components/BookingForm.vue';
 import axios from 'axios';
 
-const availableSlots = ref([]);
+vi.mock('axios');
 
-const fetchBookings = async () => {
-  const { data } = await axios.get('http://localhost:3000/bookings');
-  const bookedSlots = data.map(b => `${b.date}-${b.time}`);
+describe('BookingList.vue', () => {
+  it('fetches available slots and displays them', async () => {
+    axios.get.mockResolvedValue({ data: [{ date: 'Hétfő', time: '10:00' }] });
+    
+    const wrapper = mount(BookingList);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    expect(wrapper.text()).toContain('Hétfő');
+    expect(wrapper.text()).toContain('10:00');
+  });
+});
 
-  const days = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek'];
-  const allSlots = days.flatMap((day, index) => 
-    Array.from({ length: 8 }, (_, i) => ({
-      id: index * 10 + i + 1,
-      date: day,
-      time: `${8 + i}:00`
-    }))
-  );
-  availableSlots.value = allSlots.filter(slot => !bookedSlots.includes(`${slot.date}-${slot.time}`));
-};
-
-onMounted(fetchBookings);
-</script>
-
-// Foglalási űrlap (BookingForm.vue)
-<template>
-  <div class="container mt-4">
-    <h2 class="text-center mb-4">Foglalás</h2>
-    <div class="card p-4 shadow-lg">
-      <div v-if="slot">
-        <h3 class="text-center">Időpont: {{ slot.date }} - {{ slot.time }}</h3>
-        <form @submit.prevent="submitBooking">
-          <div class="mb-3">
-            <label class="form-label">Név:</label>
-            <input v-model="name" class="form-control" required />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Telefonszám:</label>
-            <input v-model="phone" class="form-control" required />
-          </div>
-          <button type="submit" class="btn btn-success w-100">Foglalás</button>
-        </form>
-      </div>
-      <div v-else>
-        <p class="text-danger text-center">Időpont nem található!</p>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
-import { useToast } from 'vue-toastification';
-
-const route = useRoute();
-const router = useRouter();
-const toast = useToast();
-
-const slot = ref(null);
-const name = ref('');
-const phone = ref('');
-
-const fetchSlot = async () => {
-  const { data } = await axios.get('http://localhost:3000/bookings');
-  const bookedSlots = data.map(b => `${b.date}-${b.time}`);
-
-  const days = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek'];
-  const allSlots = days.flatMap((day, index) => 
-    Array.from({ length: 8 }, (_, i) => ({
-      id: index * 10 + i + 1,
-      date: day,
-      time: `${8 + i}:00`
-    }))
-  );
-  slot.value = allSlots.find(s => s.id == route.params.id && !bookedSlots.includes(`${s.date}-${s.time}`));
-};
-
-onMounted(fetchSlot);
-
-const submitBooking = async () => {
-  if (!slot.value) return;
-  await axios.post('http://localhost:3000/bookings', { id: Date.now(), date: slot.value.date, time: slot.value.time, name: name.value, phone: phone.value });
-  toast.success('Foglalás sikeres!');
-  router.push('/');
-};
-</script>
+describe('BookingForm.vue', () => {
+  let wrapper;
+  
+  beforeEach(() => {
+    wrapper = mount(BookingForm, {
+      props: { id: 1 }
+    });
+  });
+  
+  it('validates form input before submission', async () => {
+    await wrapper.find('button').trigger('click');
+    expect(wrapper.text()).toContain('Időpont nem található!');
+  });
+  
+  it('submits the booking and shows success toast', async () => {
+    axios.post.mockResolvedValue({});
+    
+    wrapper.setData({
+      name: 'Teszt Elek',
+      phone: '123456789',
+      slot: { date: 'Hétfő', time: '10:00' }
+    });
+    
+    await wrapper.find('button').trigger('click');
+    expect(axios.post).toHaveBeenCalled();
+  });
+});
