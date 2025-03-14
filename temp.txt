@@ -1,9 +1,1 @@
-describe('BookingListView.vue', () => {
-  it('displays a message when no available slots are fetched', async () => {
-    axios.get.mockResolvedValue({ data: [] });
-    const wrapper = mount(BookingListView);
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    expect(wrapper.text()).toContain('No available slots');
-  });
-});
+
